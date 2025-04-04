@@ -137,6 +137,9 @@ class PrepareDermaVQA:
         self.images_dir = os.path.join(self.data_dir, "images_final/images_final/images_" + self._get_mode_folder())
         self.masks_dir = os.path.join(self.data_dir, "dermavqa-seg-trainvalid (2)/dermavqa-seg-trainvalid/dermavqa-segmentations", self._get_mode_folder())
         
+        self.saved_data_dir = "/kaggle/input/dermo-degsiff/imageclefmed-mediqa-magic-2025/np"
+
+        # Đường dẫn mới để lưu nếu chưa có dữ liệu trước đó
         self.npy_dir = "/kaggle/working/imageclefmed-mediqa-magic-2025/np"
         os.makedirs(self.npy_dir, exist_ok=True)
         
@@ -266,24 +269,31 @@ class PrepareDermaVQA:
             raise ValueError("Error: No valid images found. Check dataset paths!")
         
         # For test data, skip saving masks
-        if msks and Y.size == 0:
-            raise ValueError("Error: No valid masks found. Check dataset paths!")
+        if self.mode != 'test' and msks:
+            np.save(save_path_y, Y)  # Save masks if available
         
         self.print(f"Saving data... (X shape: {X.shape}, Y shape: {Y.shape if Y is not None else 'No Y file'})")
         
         # Save the data
         np.save(save_path_x, X)  # Save images
-        if msks:
-            np.save(save_path_y, Y)  # Save masks if available
         
         self.print(f"Saved at:\n  X: {save_path_x}\n  Y: {save_path_y if msks else ''}")
 
     def get_data(self):
+        # Chỉ load train và valid từ đường dẫn đã lưu trước
+        if self.mode in ["train", "val"]:
+            self.npy_dir = "/kaggle/input/dermo-degsiff/imageclefmed-mediqa-magic-2025/np"
+        elif self.mode == "test":
+            self.npy_dir = "/kaggle/working/imageclefmed-mediqa-magic-2025/np"
+        
+        # Tạo thư mục nếu chưa có
+        os.makedirs(self.npy_dir, exist_ok=True)
+        
         data_path = self.__get_data_path()
 
         self.print("Checking for pre-saved files...")
         if not self.is_data_existed():
-            self.print("There are no pre-saved files.")
+            self.print(f"There are no pre-saved files for {self.mode}.")
             self.print(f"Preparing {self.mode} data...")
             self.prepare_data()
         else:
