@@ -38,10 +38,12 @@ def p_losses(
     t,
     cfg,
     noise=None,
+    device='cuda',
 ):
     global calc_boundary
     logger = get_logger()
-    
+
+    denoise_model.to(device)
     T = cfg["diffusion"]["schedule"]["timesteps"]
 
     cfg_loss = cfg['training']['loss']
@@ -54,18 +56,31 @@ def p_losses(
     
     if x_noisy.isnan().any().item() or g.isnan().any().item():
         print(f"\nt:{t.detach().cpu().numpy()}, x_start:{x_start.isnan().any().item()}, x_noisy:{x_noisy.isnan().any().item()}, g:{g.isnan().any().item()}\n")
-    
-    if isinstance(denoise_model, DermoSegDiff):
-        predicted_noise = denoise_model(x_noisy, g, t)
-    elif isinstance(denoise_model, Baseline):
-        predicted_noise = denoise_model(x=x_noisy, time=t, x_self_cond=g)
+
+    if isinstance(denoise_model, torch.nn.DataParallel):
+        # Truy cập mô hình bên trong DataParallel
+        denoise_model_inner  = denoise_model.module
+    else:
+        # Nếu không phải DataParallel, dùng mô hình trực tiếp
+        denoise_model_inner  = denoise_model
+
+    # if isinstance(denoise_model, torch.nn.DataParallel):
+    #     print(f"Model is using {torch.cuda.device_count()} GPUs: {denoise_model.device_ids} 1.")
+    # else:
+    #     print("Model is not using multiple GPUs 1.")
+    # print('Plsssssssssssssssss')
+    if isinstance(denoise_model_inner , DermoSegDiff):
+        predicted_noise = denoise_model (x_noisy, g, t)
+    elif isinstance(denoise_model_inner , Baseline):
+        predicted_noise = denoise_model (x=x_noisy, time=t, x_self_cond=g)
     else:
         logger.exception('given <denoise_model> is unknown!')
-    
+    # print('outPlsssssssssssssss')
     if x_noisy.isnan().any().item() or g.isnan().any().item() or predicted_noise.isnan().any().item():
         print(f"\n\nx: {x_noisy.isnan().any().item()}, g: {g.isnan().any().item()}, preds: {predicted_noise.isnan().any().item()}\n\n")
         
     losses=dict()
+    # print(f"Thuc hien sau 1.")
     ln = loss_type.lower()
     if ln=="l1" or (ln=="hybrid" and "l1" in cfg_loss.keys()):
         losses["l1"] = F.l1_loss(predicted_noise, noise)
@@ -78,7 +93,7 @@ def p_losses(
             parameters = cfg_loss["boundary"].get("params", {})
             calc_boundary = BoundaryLoss(parameters)
         losses["boundary"] = calc_boundary(x_start, t, T, predicted_noise, noise)
-  
+
     if loss_type.lower() in ["l1", "l2", "huber", "boundary"]:
         loss = losses[loss_type.lower()]
     else: # loss_type == "hybrid":
