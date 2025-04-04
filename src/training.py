@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 import random
 import torch
+import gc
 from torch.optim import Adam, SGD, AdamW
 from utils.helper_funcs import (
     load_config,
@@ -80,9 +81,19 @@ tr_dataloader, vl_dataloader = get_dataloaders(config, ["tr", "vl"])
 Net = globals()[config["model"]["class"]]
 model = Net(**config["model"]["params"])
 
+if torch.cuda.device_count() > 1:
+    logger.info(f"Using {torch.cuda.device_count()} GPUs for training.")
+    model = torch.nn.DataParallel(model)
+
+# if isinstance(model, torch.nn.DataParallel):
+#     print(f"Model is using {torch.cuda.device_count()} GPUs: {model.device_ids} 2.")
+# else:
+#     print("Model is not using multiple GPUs 2.")
+    
 # writer.add_graph(model, (torch.randn(1, img_channels+msk_channels, input_size, input_size), torch.tensor([1])))
 # writer.add_graph(sample, (forward_schedule, model, batch["image"], 1))
 model = model.to(device)
+
 total_params = sum(p.numel() for p in model.parameters())
 logger.info(f"Number of model parameters: {total_params}")
 
@@ -101,6 +112,7 @@ from ema_pytorch import EMA
 
 try:
     if config["training"]["ema"]["use"]:
+        print("Co ema")
         ema = EMA(model=model, **config["training"]["ema"]["params"])
         ema.to(device)
     else:
@@ -110,16 +122,31 @@ except KeyError:
 
 
 if config["run"]["continue_training"] or config["training"]["intial_weights"]["use"]:
+    print("Co model")
     if config["run"]["continue_training"]:
         model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
     else:
         model_path = config["training"]["intial_weights"]["file_path"]
     try:
-        checkpoint = torch.load(model_path, map_location="cpu")
+        checkpoint = torch.load(model_path, map_location="cuda")
+        state_dict = checkpoint["model"]
+        print("Keys in checkpoint:")
+        for key in checkpoint.keys():
+            print(key)
+        # if isinstance(model, torch.nn.DataParallel):
+        #     print(f"Model is using {torch.cuda.device_count()} GPUs: {model.device_ids} 3.")
+        # else:
+        #     print("Model is not using multiple GPUs 3.")
+        # if isinstance(model, torch.nn.DataParallel):
+        #     new_state_dict = {"module." + k if not k.startswith("module.") else k: v for k, v in state_dict.items()}
+        # else:
+        #     new_state_dict = {k.replace("module.", "") if k.startswith("module.") else k: v for k, v in state_dict.items()}
         if config["run"]["continue_training"]:
+            print("Vo training")
             if checkpoint["epochs"] > checkpoint["epoch"] + 1:
+                print("Vo epoch")
                 best_vl_loss = checkpoint["vl_loss"]
-                model.load_state_dict(checkpoint["model"])
+                model.load_state_dict(state_dict)
                 start_epoch = checkpoint["epoch"] + 1
                 optimizer.load_state_dict(checkpoint["optimizer"])
                 if ema:
@@ -131,7 +158,7 @@ if config["run"]["continue_training"] or config["training"]["intial_weights"]["u
                 logger.warning("the net already trained!")
                 sys.exit()
         else:
-            model.load_state_dict(checkpoint["model"])
+            model.load_state_dict(state_dict)
             if ema:
                 ema = EMA(model=model, **config["training"]["ema"]["params"])
                 ema.to(device)
@@ -140,22 +167,29 @@ if config["run"]["continue_training"] or config["training"]["intial_weights"]["u
             
     except:
         logger.warning("There is a problem with loading the previous model to continue training.")
-        logger.warning(" --> Do you want to train the model from the beginning? (y/N):")
-        user_decision = input()
-        if (user_decision != "y"):
-            exit()
+        
+        if config.get("run", {}).get("auto_continue", False):
+            logger.info("Automatic decision: training the model from the beginning.")
+        else:
+            logger.warning(" --> The model will be trained from the beginning.")
+            sys.exit()
 else:
     model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
     if os.path.isfile(model_path):
         logger.warning(f"There is a model weights at determind directory with desired name: {ID}")
-        logger.warning(" --> Do you want to train the model from the beginning? It will overwrite the current weights! (y/N):")
-        user_decision = input()
-        if (user_decision != "y"):
-            exit()
+        if config.get("run", {}).get("auto_continue", False):
+            logger.info("Automatic decision: training the model from the beginning due to existing model.")
+        else:
+            logger.warning(" --> Do you want to train the model from the beginning? It will overwrite the current weights! (y/N):")
+            user_decision = "y"  # Tự động chọn "y" để huấn luyện lại
+            if user_decision != "y":
+                exit()
+
 
 
 for epoch in range(start_epoch, epochs):
-
+    # print('Truoc khi vo train')
+    # print(f"Trước khi vào p_losses: {type(model)}")
     tr_losses, model = train(
         model,
         tr_dataloader,
@@ -167,7 +201,7 @@ for epoch in range(start_epoch, epochs):
         extra={"skip_steps": 10, "prefix": f"ep:{epoch+1}/{epochs}"},
         logger=logger
     )
-
+    
     vl_losses = validate(
         ema.ema_model if ema else model,
         vl_dataloader,
@@ -186,6 +220,8 @@ for epoch in range(start_epoch, epochs):
         {"Train": tr_loss, "Validation": vl_loss},
         epoch,
     )
+    gc.collect()
+    torch.cuda.empty_cache()
 
     # ---------- tr losses -------------
     lns = tr_losses[0][1].keys()
@@ -225,7 +261,7 @@ for epoch in range(start_epoch, epochs):
         # torch.save(model.state_dict(), model_path)
 
         checkpoint = {
-            "model": model.state_dict(),
+            "model": model.module.state_dict() if isinstance(model, torch.nn.DataParallel) else model.state_dict(),
             "epoch": epoch,
             "epochs": epochs,
             "optimizer": optimizer.state_dict(),
