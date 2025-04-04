@@ -177,17 +177,24 @@ for step, batch in tqdm(
     total=len(te_dataloader),
 ):
     batch_imgs = batch["image"].to(device)
-    batch_msks = batch["mask"].to(device)
+    batch_msks = batch.get("mask", None)  # No mask in the test dataset
     batch_ids = batch["id"]
 
     samples_list, mid_samples_list = [], []
     all_samples_list = []
+    
+    # If mask is available, use it; otherwise, set out_channels to 1
+    if batch_msks is not None:
+        out_channels = batch_msks.shape[1]
+    else:
+        out_channels = 1  # For inference, we only need the image
+
     for en in range(ensemble):
         samples = sample(
             forward_schedule,
             model,
             images=batch_imgs,
-            out_channels=batch_msks.shape[1],
+            out_channels=out_channels,
             desc=f"ensemble {en+1}/{ensemble}",
         )
         samples_list.append(samples[-1][:, :1, :, :].to(device))
@@ -200,20 +207,22 @@ for step, batch in tqdm(
     preds = mean_of_list_of_tensors(samples_list)
     mid_preds = mean_of_list_of_tensors(mid_samples_list)
 
-    if batch_msks.shape[1] > 1:
+    if batch_msks is not None and batch_msks.shape[1] > 1:
         batch_msks = batch_msks[:, 0, :, :].unsqueeze(1)
-
-    if batch_msks.shape[1] > 1:
-        preds_ = torch.argmax(preds, 1, keepdim=False).float()
-        msks_ = torch.argmax(batch_msks, 1, keepdim=False)
+    
+    # Thực hiện chuyển kiểu dữ liệu để tương thích với torchmetrics (chuyển float thành int)
+    if batch_msks is not None:
+        preds_ = torch.where(preds > 0, 1, 0).float()
+        msks_ = torch.where(batch_msks > 0, 1, 0).int()  # Chuyển msks_ thành int (integer tensor)
     else:
         preds_ = torch.where(preds > 0, 1, 0).float()
-        msks_ = torch.where(batch_msks > 0, 1, 0)
+        msks_ = torch.zeros_like(preds_, dtype=torch.int)  # Nếu không có mask, tạo mask toàn số 0 và chuyển thành int
+    
     test_metrics.update(preds_, msks_)
 
     write_imgs(
         batch_imgs,
-        batch_msks,
+        msks_,
         preds,
         mid_preds,
         step=step,
@@ -223,7 +232,7 @@ for step, batch in tqdm(
     if config["testing"]["result_imgs"]["save"]:
         save_sampling_results_as_imgs(
             batch_imgs,
-            batch_msks,
+            msks_,
             batch_ids,
             preds,
             all_samples_list,
