@@ -1,7 +1,7 @@
 import torch
+import torch.nn as nn
 import numpy as np
 from loss import p_losses
-
 
 
 def get_print():
@@ -39,7 +39,8 @@ def train(
         t = torch.randint(
             1, forward_process.forward_schedule.timesteps, (batch_size,), device=device
         ).long()
-
+        # print("Truoc khi vo p_losses")
+        # print(f"Trước khi vào p_losses: {type(model)}")
         loss, losses_dict = p_losses(
             forward_process,
             model,
@@ -101,6 +102,9 @@ def validate(
 ):
     
     losses = []
+    # Đảm bảo model đã được chuyển sang GPU
+    
+    # Không cần bao bọc lại DataParallel nếu đã làm điều đó trong train
     model.eval()
     for step, batch in enumerate(dataloader):
 
