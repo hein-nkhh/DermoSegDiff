@@ -1,6 +1,7 @@
 from loaders.ph2 import get_ph2
 from loaders.isic2018 import get_isic2018
 from loaders.ham10000 import get_ham10000
+from loaders.new_dataset import get_dermavqa
 from common.logging import get_logger
 
 
