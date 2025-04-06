@@ -471,7 +471,7 @@ def mean_of_list_of_tensors(list_of_tensors):
 
 from torchvision.utils import save_image
 def save_sampling_results_as_imgs(
-    batch_imgs, batch_msks, batch_ids, batch_prds, 
+    batch_imgs, batch_ids, batch_prds, 
     ensemble_list_of_samples_in_timesteps=None, middle_steps_of_sampling=4,
     save_dir="./saved_imgs",
     dataset_name=None,
@@ -484,21 +484,18 @@ def save_sampling_results_as_imgs(
     # check dir
     Path(save_directory).mkdir(exist_ok=True, parents=True)
 
-    for im, gt, id, pd in zip(batch_imgs, batch_msks, batch_ids, batch_prds):
+    for im, id, pd in zip(batch_imgs, batch_ids, batch_prds):
         sd = f"{save_directory}/{id}"
         Path(sd).mkdir(exist_ok=True)
         
         save_image(im   , f"{sd}/im.{img_ext}")
-        save_image(gt[0], f"{sd}/gt.{img_ext}")
         save_image(pd[0], f"{sd}/pd.{img_ext}")
         
         # draw gt-pd on the image
-        db = draw_boundary(torch.where(gt>0, 1, 0), im, (0, 255, 0))
         db = draw_boundary(torch.where(pd>0, 1, 0), db, (0, 0, 255))
         save_image(torch.tensor(db), f"{sd}/db.{img_ext}")
 
         if save_mat:
-            torch.save(gt[0], f"{sd}/gt.pt")
             torch.save(pd[0], f"{sd}/pd.pt")
             
     if ensemble_list_of_samples_in_timesteps:
