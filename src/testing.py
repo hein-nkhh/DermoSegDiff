@@ -107,7 +107,7 @@ logger.info(f"Device is <{device}>")
 Path(config["model"]["save_dir"]).mkdir(exist_ok=True)
 if config["testing"]["result_imgs"]["save"]:
     try:
-        Path(config["testing"]["result_imgs"]["dir"] + "/" + ID).mkdir()
+        Path(config["testing"]["result_imgs"]["dir"] + "/" + ID).mkdir(parents=True, exist_ok=True)
     except FileExistsError:
         shutil.rmtree(Path(config["testing"]["result_imgs"]["dir"] + "/" + ID))
         Path(config["testing"]["result_imgs"]["dir"] + "/" + ID).mkdir()
