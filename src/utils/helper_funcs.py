@@ -491,6 +491,9 @@ def save_sampling_results_as_imgs(
         save_image(im   , f"{sd}/im.{img_ext}")
         save_image(pd[0], f"{sd}/pd.{img_ext}")
         
+        binary_mask = (pd > 0).int()
+        save_image(binary_mask.float(), f"{sd}/binary_mask.{img_ext}")
+
         # draw gt-pd on the image
         db = draw_boundary(torch.where(pd>0, 1, 0), im, (0, 0, 255))
         save_image(torch.tensor(db), f"{sd}/db.{img_ext}")
