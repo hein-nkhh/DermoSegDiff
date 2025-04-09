@@ -229,6 +229,26 @@ for epoch in range(start_epoch, epochs):
         f"\nep:{epoch+1:03d}/{epochs:03d}, tr_loss: {tr_loss:0.8f}, vl_loss: {vl_loss:0.8f}\n{extra_losses_txt}"
     )
     
+    # Đường dẫn cố định cho checkpoint training tiếp
+    import os
+    os.makedirs(config["model"]["save_checkpoint_dir"], exist_ok=True)
+    ckpt_path = os.path.join(config["model"]["save_checkpoint_dir"], f"{ID}_latest.pth")
+
+    # Dữ liệu lưu checkpoint
+    checkpoint = {
+        "model": model.module.state_dict() if isinstance(model, torch.nn.DataParallel) else model.state_dict(),
+        "epoch": epoch,
+        "epochs": epochs,
+        "optimizer": optimizer.state_dict(),
+        "ema": ema.state_dict() if ema else None,
+        "vl_loss": vl_loss,
+    }
+
+    # Lưu đè lên file cũ
+    torch.save(checkpoint, ckpt_path)
+    logger.info(f"[Checkpoint] 🔄 Saved latest checkpoint -> {ckpt_path}")
+
+
     if best_vl_loss > vl_loss:
         logger.info(
             f">>> Found a better model: last-vl-loss:{best_vl_loss:0.8f}, new-vl-loss:{vl_loss:0.8f}"
