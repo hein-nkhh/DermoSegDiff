@@ -119,6 +119,12 @@ DT = DiffusionTransform((INPUT_SIZE, INPUT_SIZE))
 
 # --------------- Datasets and Dataloaders -----------------
 te_dataloader = get_dataloaders(config, "te")
+val_dataloader = get_dataloaders(config, "val")
+if config["testing"]["dataset"] == "val":
+    dataloader = val_dataloader
+else:
+    dataloader = te_dataloader
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
 Net = globals()[config["model"]["class"]]
@@ -178,9 +184,9 @@ model.eval()
 test_metrics = get_binary_metrics()
 
 for step, batch in tqdm(
-    enumerate(te_dataloader),
+    enumerate(dataloader),
     desc=f"Testing {config['model']['name']}",
-    total=len(te_dataloader),
+    total=len(dataloader),
 ):
     batch_imgs = batch["image"].to(device)
     batch_ids = batch["id"]
