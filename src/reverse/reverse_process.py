@@ -16,9 +16,9 @@ def p_sample(forward_schedule, model, images, x, t, t_index):
     # Equation 11 in the paper
     # Use our model (noise predictor) to predict the mean
 
-    if isinstance(model.module, DermoSegDiff):
+    if isinstance(model, DermoSegDiff):
         predicted_noise = model(x, images, t)
-    elif isinstance(model.module, Baseline):
+    elif isinstance(model, Baseline):
         predicted_noise = model(x, t, images)
     else:
         NotImplementedError('given model is unknown!')
