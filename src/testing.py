@@ -119,8 +119,8 @@ DT = DiffusionTransform((INPUT_SIZE, INPUT_SIZE))
 
 # --------------- Datasets and Dataloaders -----------------
 te_dataloader = get_dataloaders(config, "te")
-val_dataloader = get_dataloaders(config, "val")
-if config["testing"]["dataset"] == "val":
+val_dataloader = get_dataloaders(config, "vl")
+if config["testing"]["dataset"] == "vl":
     dataloader = val_dataloader
 else:
     dataloader = te_dataloader
