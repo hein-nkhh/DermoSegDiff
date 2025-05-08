@@ -32,7 +32,8 @@ def get_argparser():
   parser.add_argument('--augmentation_p', type=float, help="0.5")
   
   parser.add_argument('-v', '--verbose', action='store_true')
-  
+  parser.add_argument('--image_path', type=str, required=True, help="Path to a single input image for testing.")
+
   return parser
 
 
@@ -94,7 +95,7 @@ def sync_config(config, args):
 # --------- add auxiliary params ----------
   loss = config["training"]["loss"]
   if len(loss.keys()) == 1:
-    config['training']['loss_name'] = list(loss.keys())[0]
+    config['training']['loss_name'] = list(loss.keys())[0]-
   elif len(loss.keys()) > 1:
     config['training']['loss_name'] = "hybrid"
   else:
