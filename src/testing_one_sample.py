@@ -62,8 +62,7 @@ if config["testing"]["result_imgs"]["save"]:
 def preprocess_image(image_path, input_size, device):
     img = Image.open(image_path).convert('RGB')
     transform = DiffusionTransform((input_size, input_size)).get_forward_transform_img()
-    img_tensor = transform(img).unsqueeze(0).to(device)
-    img_tensor = (img_tensor - img_tensor.min()) / (img_tensor.max() - img_tensor.min() + 1e-8)
+    img_tensor = transform(img).unsqueeze(0).to(device)  # Add batch dimension
     return img_tensor
 
 input_tensor = preprocess_image(
