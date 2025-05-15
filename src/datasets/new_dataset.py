@@ -137,7 +137,8 @@ class PrepareDermaVQA:
         self.images_dir = os.path.join(self.data_dir, "images_final/images_final/images_" + self._get_mode_folder())
         self.masks_dir = os.path.join(self.data_dir, "dermavqa-seg-trainvalid (2)/dermavqa-seg-trainvalid/dermavqa-segmentations", self._get_mode_folder())
         
-        self.saved_data_dir = "/kaggle/input/dermo-degsiff/imageclefmed-mediqa-magic-2025/np"
+        self.saved_data_dir = "/kaggle/input/dermo-degsiff-training-part1-128x128-16-batch/dermo-degsiff/imageclefmed-mediqa-magic-2025/np"
+        
 
         # Đường dẫn mới để lưu nếu chưa có dữ liệu trước đó
         self.npy_dir = "/kaggle/working/imageclefmed-mediqa-magic-2025/np"
