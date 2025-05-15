@@ -163,7 +163,9 @@ else:
         if (user_decision != "y"):
             exit()
 
-
+# Save checkpoint
+os.makedirs(config["model"]["save_checkpoint_dir"], exist_ok=True)
+checkpoint_path = get_model_path(name=ID, dir=config["model"]["save_checkpoint_dir"]) 
 
 for epoch in range(start_epoch, epochs):
 
@@ -230,9 +232,8 @@ for epoch in range(start_epoch, epochs):
     )
     
     # Đường dẫn cố định cho checkpoint training tiếp
-    import os
-    os.makedirs(config["model"]["save_checkpoint_dir"], exist_ok=True)
-    ckpt_path = os.path.join(config["model"]["save_checkpoint_dir"], f"{ID}_latest.pth")
+    # This code snippet is responsible for saving the latest checkpoint during the training process of
+    # a neural network model. Here's a breakdown of what each part does:
 
     # Dữ liệu lưu checkpoint
     checkpoint = {
@@ -245,8 +246,8 @@ for epoch in range(start_epoch, epochs):
     }
 
     # Lưu đè lên file cũ
-    torch.save(checkpoint, ckpt_path)
-    logger.info(f"[Checkpoint] 🔄 Saved latest checkpoint -> {ckpt_path}")
+    torch.save(checkpoint, checkpoint_path)
+    logger.info(f"[Checkpoint] 🔄 Saved latest checkpoint -> {checkpoint_path}")
 
 
     if best_vl_loss > vl_loss:
