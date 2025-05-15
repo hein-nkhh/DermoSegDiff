@@ -32,7 +32,7 @@ def get_argparser():
   parser.add_argument('--augmentation_p', type=float, help="0.5")
   
   parser.add_argument('-v', '--verbose', action='store_true')
-  parser.add_argument('--image_path', type=str, required=True, help="Path to the image for one-sample testing")
+  parser.add_argument('--image_path', type=str, required=False, help="Path to the image for one-sample testing")
 
   return parser
 
