@@ -33,6 +33,7 @@ def get_argparser():
   
   parser.add_argument('-v', '--verbose', action='store_true')
   parser.add_argument('--image_path', type=str, required=False, help="Path to the image for one-sample testing")
+  parser.add_argument('--ensemble_number', type=str, required=False, help="Number of ensemble models to use for testing")
 
   return parser
 
