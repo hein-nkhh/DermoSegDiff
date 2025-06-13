@@ -150,12 +150,13 @@ except KeyError:
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-if config["testing"]["model_weigths"]["overload"]: 
-    logger.info(f"trying to load the desired model:")
-    best_model_path = config["testing"]["model_weigths"]["file_path"]
-else:
-    logger.info(f"trying to load the best model:")
-    best_model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
+# if config["testing"]["model_weigths"]["overload"]: 
+#     logger.info(f"trying to load the desired model:")
+#     best_model_path = config["testing"]["model_weigths"]["file_path"]
+# else:
+#     logger.info(f"trying to load the best model:")
+#     best_model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
+best_model_path = args.best_model_path if args.best_model_path else get_model_path(name=ID, dir=config["model"]["save_dir"])
 
 logger.info(f" -> {best_model_path}")
 if not os.path.isfile(best_model_path):
