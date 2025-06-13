@@ -12,6 +12,7 @@ from skimage import feature
 import torchvision
 import torchvision.transforms as transforms
 from pathlib import Path
+import torch.nn.functional as F
 
 
 def exists(x):
@@ -477,10 +478,11 @@ def save_sampling_results_as_imgs(
     dataset_name=None,
     result_id=None,
     img_ext="png",
-    save_mat=False
+    save_mat=False,
+    original_size = None,
+    base_name = None
 ):
     save_directory =  "/".join([d for d in [save_dir, dataset_name, result_id] if d])
-    
     # check dir
     Path(save_directory).mkdir(exist_ok=True, parents=True)
 
@@ -494,6 +496,22 @@ def save_sampling_results_as_imgs(
         binary_mask = (pd > 0).int()
         save_image(binary_mask.float(), f"{sd}/binary_mask.{img_ext}")
 
+        # print(binary_mask.shape)
+        # is_binary = torch.all((binary_mask == 0) | (binary_mask == 1))
+        # print("Chỉ chứa 0 và 1:", is_binary.item())
+        
+        if original_size is not None:
+            # Thêm batch dimension và giữ nguyên channel dimension
+            resized_mask = F.interpolate(
+                binary_mask.unsqueeze(0).float(),  # Shape [1, 1, 128, 128]
+                size=original_size,
+                mode='nearest'
+            ).squeeze(0).int()  # Shape [1, H_original, W_original]
+            
+            mask_filename = f"{base_name}_mask_ann1.tiff" if base_name else "binary_mask_original_size.tiff"
+            save_image(resized_mask.float(), f"{sd}/{mask_filename}")
+            save_image(resized_mask.float(), f"{sd}/binary_mask_original_size.{img_ext}")
+            
         # draw gt-pd on the image
         db = draw_boundary(torch.where(pd>0, 1, 0), im, (0, 0, 255))
         save_image(torch.tensor(db), f"{sd}/db.{img_ext}")
@@ -509,4 +527,3 @@ def save_sampling_results_as_imgs(
             for batch_sample, t in zip(batch_samples, sample_ts):
                 for sample, id in zip(batch_sample, batch_ids):
                     save_image(sample[0], f"{save_directory}/{id}/t_{t}.{img_ext}")
-                
