@@ -283,7 +283,8 @@ class PrepareDermaVQA:
     def get_data(self):
         # Chỉ load train và valid từ đường dẫn đã lưu trước
         if self.mode in ["train", "val"]:
-            self.npy_dir = self.saved_data_dir
+            # self.npy_dir = self.saved_data_dir // Sử dụng đường dẫn đã lưu trước
+            self.npy_dir = "/kaggle/working/imageclefmed-mediqa-magic-2025/np" # Đường dẫn mới để lưu nếu chưa có dữ liệu trước đó
         elif self.mode == "test":
             self.npy_dir = "/kaggle/working/imageclefmed-mediqa-magic-2025/np"
         
