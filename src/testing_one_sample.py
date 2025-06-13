@@ -116,10 +116,11 @@ if config["training"].get("ema", {}).get("use", False):
     ema.to(device)
 
 # Load weights
-if config["testing"]["model_weigths"]["overload"]:
-    best_model_path = config["testing"]["model_weigths"]["file_path"]
-else:
-    best_model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
+# if config["testing"]["model_weigths"]["overload"]:
+#     best_model_path = config["testing"]["model_weigths"]["file_path"]
+# else:
+#     best_model_path = get_model_path(name=ID, dir=config["model"]["save_dir"])
+best_model_path = args.best_model_path if args.best_model_path else get_model_path(name=ID, dir=config["model"]["save_dir"])
 
 if not os.path.isfile(best_model_path):
     logger.exception(f"Model file not found: {best_model_path}")
