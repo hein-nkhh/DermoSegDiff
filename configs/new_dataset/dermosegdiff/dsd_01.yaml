@@ -7,9 +7,9 @@ run:
     # Set continue_training and auto_continue is true if want to training continue from checkpoint
 
 model:
-  save_checkpoint_dir: 'path_to_save_checkpoint'
-  load_dir: 'Load checkpoint to continue training'
-  save_dir: 'Path to save model'
+  save_checkpoint_dir: 'your_ath_to_save_checkpoint'
+  load_dir: 'Load_your_checkpoint_to_continue_training'
+  save_dir: 'Your_path_to_save_model'
   name: 'dsd_h01' # the model will save and load with this config associated with this name.
   class: 'DermoSegDiff' # do not change this line unless you implement a new model inside models folder
   params: # the class arguments defined above
